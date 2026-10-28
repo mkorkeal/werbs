@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<title>Epäsäännölliset verbit</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--text:#1b2233;--muted:#64708a;--primary:#1d4ed8;--primary-t:#fff;--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--line:#d9deea}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#1a2133;--text:#e8ecf5;--muted:#93a0bc;--primary:#5b8cff;--primary-t:#0b1020;--ok:#4ade80;--okbg:#12361f;--bad:#f87171;--badbg:#401818;--line:#2c3550}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+main{max-width:560px;margin:0 auto;padding:16px 0 40px}
+h1{font-size:1.4rem;margin:8px 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 10px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{flex:1;min-width:110px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.seg input:checked+span{background:var(--primary);color:var(--primary-t);border-color:var(--primary)}
+.seg input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.letters{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-top:10px}
+.letters button{padding:10px 0;font-weight:600}
+.letters button.on{background:var(--primary);color:var(--primary-t);border-color:var(--primary)}
+button,select,input[type=text]{font:inherit;color:var(--text)}
+button{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer}
+button.primary{background:var(--primary);color:var(--primary-t);border-color:var(--primary);font-weight:600;width:100%;padding:14px}
+select{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);flex:1}
+.row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.hint{color:var(--muted);font-size:.9rem;margin-top:8px}
+.top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.95rem;margin-bottom:8px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--primary);transition:width .2s}
+.prompt{font-size:2rem;font-weight:700;text-align:center;margin:18px 0 6px}
+.sub{text-align:center;color:var(--muted);margin-bottom:16px}
+.opts{display:grid;gap:10px}
+.opts button{text-align:left;padding:14px;font-size:1.05rem}
+.opts button.ok,.fld.ok{background:var(--okbg);border-color:var(--ok)}
+.opts button.bad,.fld.bad{background:var(--badbg);border-color:var(--bad)}
+.fields{display:grid;gap:10px}
+.fields label{display:block;font-size:.85rem;color:var(--muted)}
+.fld{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:1.1rem;margin-top:3px}
+.answer{margin-top:16px;padding:14px;border-radius:12px;background:var(--okbg);border:1px solid var(--ok)}
+.answer.wrong{background:var(--badbg);border-color:var(--bad)}
+.answer .big{font-size:1.25rem;font-weight:700}
+.answer .tag{font-size:.9rem;margin-bottom:4px}
+.actions{display:flex;gap:10px;margin-top:14px}
+.actions .primary{flex:1}
+.score{font-size:3rem;font-weight:800;text-align:center;margin:10px 0}
+ul.miss{padding-left:18px}
+.vgrid{display:grid;gap:2px;margin-top:10px;max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px}
+.vgrid label{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px}
+.vgrid label small{color:var(--muted);margin-left:auto}
+.vgrid input,#speak{width:20px;height:20px}
+details summary{cursor:pointer;font-weight:600;padding:2px 0}
+.fbtns{display:flex;gap:8px;margin-top:10px}
+.fbtns button{flex:1;padding:8px}
+.startrow{display:flex;gap:10px}
+.startrow .primary{flex:1;width:auto}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.link{background:none;border:none;color:var(--muted);text-decoration:underline;padding:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>Epäsäännölliset verbit</h1>
+
+<!-- Setup -->
+<section id="setup">
+  <div class="card"><h2>Vaikeustaso</h2>
+    <div class="seg" id="s-mode">
+      <label><input type="radio" name="mode" value="easy"><span>Helppo<br><small>valitse oikea</small></span></label>
+      <label><input type="radio" name="mode" value="hard"><span>Vaikea<br><small>kirjoita itse</small></span></label>
+    </div>
+  </div>
+  <div class="card"><h2>Mitkä verbit</h2>
+    <div class="seg" id="s-range">
+      <label><input type="radio" name="range" value="all"><span>Kaikki</span></label>
+      <label><input type="radio" name="range" value="letters"><span>Alkukirjaimet</span></label>
+      <label><input type="radio" name="range" value="span"><span>Väli</span></label>
+    </div>
+    <div id="r-letters" hidden><div class="letters" id="letters"></div></div>
+    <div id="r-span" hidden><div class="row"><select id="from"></select><span>–</span><select id="to"></select></div></div>
+    <div class="hint" id="count"></div>
+    <details id="filter" style="margin-top:10px"><summary>Muokkaa verbilistaa</summary>
+      <div class="fbtns"><button type="button" id="selall">Valitse kaikki</button><button type="button" id="selnone">Poista kaikki</button></div>
+      <div class="vgrid" id="vlist"></div>
+    </details>
+  </div>
+  <div class="card"><h2>Järjestys</h2>
+    <div class="seg" id="s-order">
+      <label><input type="radio" name="order" value="random"><span>Satunnainen</span></label>
+      <label><input type="radio" name="order" value="alpha"><span>Aakkosjärjestys</span></label>
+    </div>
+  </div>
+  <div class="card"><h2>Englanti</h2>
+    <div class="seg" id="s-variant">
+      <label><input type="radio" name="variant" value="uk"><span>Brittiläinen</span></label>
+      <label><input type="radio" name="variant" value="us"><span>Amerikkalainen</span></label>
+    </div>
+    <div class="row"><label><input type="checkbox" id="speak"> Lue oikea vastaus ääneen</label></div>
+  </div>
+  <div class="startrow"><button class="primary" id="start">Aloita</button><button id="share">🔗 Kopioi linkki</button></div>
+</section>
+
+<!-- Quiz -->
+<section id="quiz" hidden>
+  <div class="top"><button class="link" id="quit">← Lopeta</button><span id="progress"></span></div>
+  <div class="bar"><i id="barfill"></i></div>
+  <div class="prompt" id="fi"></div>
+  <div class="sub">Mikä on englanniksi? (perusmuoto – imperfekti – partisiippi)</div>
+  <div class="opts" id="opts" hidden></div>
+  <form class="fields" id="typed" hidden autocomplete="off">
+    <div><label for="f0">Perusmuoto (infinitive)</label><input class="fld" id="f0" type="text" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div><label for="f1">Imperfekti (past simple)</label><input class="fld" id="f1" type="text" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div><label for="f2">Partisiippi (past participle)</label><input class="fld" id="f2" type="text" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <button class="primary" id="check" type="submit">Tarkista</button>
+  </form>
+  <div class="answer" id="answer" hidden>
+    <div class="tag" id="atag"></div>
+    <div class="big" id="atext"></div>
+  </div>
+  <div class="actions" id="actions" hidden>
+    <button id="replay" aria-label="Kuuntele uudelleen">🔊</button>
+    <button class="primary" id="next">Seuraava</button>
+  </div>
+</section>
+
+<!-- Result -->
+<section id="result" hidden>
+  <div class="card">
+    <div class="score" id="scoretxt"></div>
+    <div id="misswrap" hidden><h2>Kertaa nämä</h2><ul class="miss" id="misslist"></ul></div>
+  </div>
+  <button class="primary" id="again-miss" hidden>Harjoittele virheet uudelleen</button>
+  <div class="actions"><button class="primary" id="again">Samat asetukset uudelleen</button><button id="tosetup">Asetukset</button></div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// inf|past|pp|suomi|[US past|US pp]   ("/" = vaihtoehtoiset muodot, ensimmäinen näytetään)
+const RAW = `
+arise|arose|arisen|ilmaantua, nousta esiin
+awake|awoke|awoken|herätä (kirjak.)
+be|was/were|been|olla
+bear|bore|borne|kantaa, sietää
+beat|beat|beaten|hakata, voittaa (joku)
+become|became|become|tulla joksikin
+begin|began|begun|aloittaa
+bend|bent|bent|taivuttaa
+bet|bet|bet|lyödä vetoa
+bind|bound|bound|sitoa
+bite|bit|bitten|purra
+bleed|bled|bled|vuotaa verta
+blow|blew|blown|puhaltaa
+break|broke|broken|rikkoa
+breed|bred|bred|jalostaa, kasvattaa (eläimiä)
+bring|brought|brought|tuoda
+build|built|built|rakentaa
+burn|burnt/burned|burnt/burned|polttaa, palaa|burned/burnt|burned/burnt
+burst|burst|burst|puhjeta, haljeta
+buy|bought|bought|ostaa
+cast|cast|cast|heittää, valaa
+catch|caught|caught|ottaa kiinni, saada kiinni
+choose|chose|chosen|valita
+cling|clung|clung|takertua
+come|came|come|tulla
+cost|cost|cost|maksaa (hintaa)
+creep|crept|crept|ryömiä, hiipiä
+cut|cut|cut|leikata
+deal|dealt|dealt|jakaa (kortit), käsitellä
+dig|dug|dug|kaivaa
+dive|dived|dived|sukeltaa|dived/dove|dived
+do|did|done|tehdä (suorittaa)
+draw|drew|drawn|piirtää, vetää
+dream|dreamt/dreamed|dreamt/dreamed|nähdä unta|dreamed/dreamt|dreamed/dreamt
+drink|drank|drunk|juoda
+drive|drove|driven|ajaa (autoa)
+eat|ate|eaten|syödä
+fall|fell|fallen|pudota, kaatua
+feed|fed|fed|ruokkia
+feel|felt|felt|tuntea
+fight|fought|fought|taistella
+find|found|found|löytää
+flee|fled|fled|paeta
+fling|flung|flung|paiskata, heittää
+fly|flew|flown|lentää
+forbid|forbade|forbidden|kieltää
+forget|forgot|forgotten|unohtaa
+forgive|forgave|forgiven|antaa anteeksi
+freeze|froze|frozen|jäätyä, jäädyttää
+get|got|got|saada, hankkia|got|gotten/got
+give|gave|given|antaa
+go|went|gone|mennä
+grind|ground|ground|jauhaa
+grow|grew|grown|kasvaa
+hang|hung|hung|riippua, ripustaa
+have|had|had|omistaa, olla jollakin
+hear|heard|heard|kuulla
+hide|hid|hidden|piilottaa, piiloutua
+hit|hit|hit|osua, lyödä
+hold|held|held|pitää kädessä
+hurt|hurt|hurt|satuttaa, sattua
+keep|kept|kept|pitää (tallessa), säilyttää
+kneel|knelt|knelt|polvistua|kneeled/knelt|kneeled/knelt
+know|knew|known|tietää, tuntea (henkilö)
+lay|laid|laid|laskea, asettaa
+lead|led|led|johtaa, viedä
+lean|leant/leaned|leant/leaned|nojata|leaned/leant|leaned/leant
+leap|leapt/leaped|leapt/leaped|loikata|leaped/leapt|leaped/leapt
+learn|learnt/learned|learnt/learned|oppia|learned/learnt|learned/learnt
+leave|left|left|lähteä, jättää
+lend|lent|lent|lainata (jollekin)
+let|let|let|antaa lupa, antaa
+lie|lay|lain|maata, olla makuulla
+light|lit|lit|sytyttää
+lose|lost|lost|menettää, hävitä
+make|made|made|valmistaa, tehdä (jtak)
+mean|meant|meant|tarkoittaa
+meet|met|met|tavata
+overcome|overcame|overcome|selvittää, päästä yli
+pay|paid|paid|maksaa
+put|put|put|panna, laittaa
+quit|quit|quit|lopettaa, luopua
+read|read|read|lukea
+ride|rode|ridden|ratsastaa, ajaa (pyörällä)
+ring|rang|rung|soida, soittaa
+rise|rose|risen|nousta
+run|ran|run|juosta
+say|said|said|sanoa
+see|saw|seen|nähdä
+seek|sought|sought|etsiä (kirjak.)
+sell|sold|sold|myydä
+send|sent|sent|lähettää
+set|set|set|asettaa, laittaa
+sew|sewed|sewn/sewed|ommella
+shake|shook|shaken|ravistaa
+shine|shone|shone|paistaa, loistaa
+shoot|shot|shot|ampua
+show|showed|shown|näyttää
+shrink|shrank|shrunk|kutistua
+shut|shut|shut|sulkea
+sing|sang|sung|laulaa
+sink|sank|sunk|upota
+sit|sat|sat|istua
+sleep|slept|slept|nukkua
+slide|slid|slid|liukua
+smell|smelt/smelled|smelt/smelled|haistaa, tuoksua|smelled/smelt|smelled/smelt
+sow|sowed|sown/sowed|kylvää
+speak|spoke|spoken|puhua
+speed|sped|sped|kiitää
+spell|spelt/spelled|spelt/spelled|tavata (kirjaimet)|spelled/spelt|spelled/spelt
+spend|spent|spent|viettää (aikaa), kuluttaa
+spill|spilt/spilled|spilt/spilled|läikyttää, kaataa (nestettä)|spilled/spilt|spilled/spilt
+spin|spun|spun|kehrätä, pyöriä
+spit|spat|spat|sylkeä
+split|split|split|halkaista, jakaa
+spoil|spoilt/spoiled|spoilt/spoiled|pilata|spoiled/spoilt|spoiled/spoilt
+spread|spread|spread|levittää, levitä
+spring|sprang|sprung|ponnahtaa, hypätä
+stand|stood|stood|seistä
+steal|stole|stolen|varastaa
+stick|stuck|stuck|liimata, tarttua
+sting|stung|stung|pistää (ampiainen)
+stink|stank|stunk|haista pahalle
+strike|struck|struck|iskeä, lyödä (kello)
+swear|swore|sworn|vannoa, kiroilla
+sweep|swept|swept|lakaista
+swim|swam|swum|uida
+swing|swung|swung|heilua, keinua
+take|took|taken|ottaa, viedä
+teach|taught|taught|opettaa
+tear|tore|torn|repiä, revetä
+tell|told|told|kertoa
+think|thought|thought|ajatella
+throw|threw|thrown|heittää
+understand|understood|understood|ymmärtää
+wake|woke|woken|herättää, herätä
+wear|wore|worn|pitää yllä (vaatetta)
+weave|wove|woven|kutoa
+weep|wept|wept|itkeä (kirjak.)
+win|won|won|voittaa (peli)
+wind|wound|wound|kiertää, kelata
+withdraw|withdrew|withdrawn|nostaa (tililtä), vetäytyä
+write|wrote|written|kirjoittaa`;
+
+// Ääntämiskorjaukset puhesyntetisaattorille
+const SAY = {past:{read:'red'},pp:{read:'red'}};
+const SAYWORD = {wound:'wownd'};
+
+const VERBS = RAW.trim().split('\n').map(l=>{
+  const p=l.split('|');
+  const split=s=>s.split('/');
+  return {fi:p[3],
+    uk:[split(p[0]),split(p[1]),split(p[2])],
+    us:[split(p[0]),split(p[4]||p[1]),split(p[5]||p[2])]};
+}).sort((a,b)=>a.uk[0][0].localeCompare(b.uk[0][0]));
+
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const S=Object.assign({mode:'easy',range:'all',order:'random',variant:'uk',speak:true,letters:[],from:'a',to:'z',excluded:[]},store.get('werbs',{}));
+const save=()=>store.set('werbs',S);
+const initial=v=>v.uk[0][0][0];
+const LETTERS=[...new Set(VERBS.map(initial))];
+
+// ---------- Setup ----------
+function setRadio(name,val){document.querySelector(`input[name=${name}][value=${val}]`).checked=true}
+const key=v=>v.uk[0][0];
+function rangePool(){
+  if(S.range==='letters') return VERBS.filter(v=>S.letters.includes(initial(v)));
+  if(S.range==='span'){const [a,b]=[S.from,S.to].sort();return VERBS.filter(v=>initial(v)>=a&&initial(v)<=b)}
+  return VERBS.slice();
+}
+const pool=()=>rangePool().filter(v=>!S.excluded.includes(key(v)));
+let listKey='';
+function renderList(){
+  const rp=rangePool(),k=rp.map(key).join();
+  if(k===listKey)return;listKey=k;
+  $('vlist').innerHTML=rp.map(v=>`<label><input type="checkbox" value="${key(v)}"${S.excluded.includes(key(v))?'':' checked'}>${key(v)}<small>${v.fi}</small></label>`).join('')||'<div class="hint" style="padding:8px">Ei verbejä valittuna</div>';
+}
+function setAll(on){
+  const keys=rangePool().map(key);
+  S.excluded=on?S.excluded.filter(x=>!keys.includes(x)):[...new Set([...S.excluded,...keys])];
+  listKey='';refresh();
+}
+function shareLink(){
+  const p=new URLSearchParams({m:S.mode,r:S.range,o:S.order,v:S.variant,s:S.speak?1:0});
+  if(S.range==='letters')p.set('l',S.letters.join(''));
+  if(S.range==='span'){p.set('f',S.from);p.set('t',S.to)}
+  const inRange=rangePool().map(key),ex=S.excluded.filter(x=>inRange.includes(x));
+  if(ex.length)p.set('x',ex.join(','));
+  return location.origin+location.pathname+'#'+p;
+}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
+async function copyLink(){
+  const url=shareLink();
+  try{await navigator.clipboard.writeText(url);return toast('Linkki kopioitu')}catch(e){}
+  const ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+  ta.remove();
+  if(ok)toast('Linkki kopioitu');else prompt('Kopioi linkki:',url);
+}
+function applyHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  if(!p.has('m'))return false;
+  const pick=(k,opts,d)=>opts.includes(p.get(k))?p.get(k):d;
+  S.mode=pick('m',['easy','hard'],S.mode);
+  S.range=pick('r',['all','letters','span'],'all');
+  S.order=pick('o',['random','alpha'],S.order);
+  S.variant=pick('v',['uk','us'],S.variant);
+  S.speak=p.get('s')!=='0';
+  S.letters=[...(p.get('l')||'')].filter(l=>LETTERS.includes(l));
+  S.from=LETTERS.includes(p.get('f'))?p.get('f'):LETTERS[0];
+  S.to=LETTERS.includes(p.get('t'))?p.get('t'):LETTERS[LETTERS.length-1];
+  S.excluded=(p.get('x')||'').split(',').filter(Boolean);
+  return true;
+}
+function refresh(){
+  $('r-letters').hidden=S.range!=='letters';
+  $('r-span').hidden=S.range!=='span';
+  document.querySelectorAll('#letters button').forEach(b=>b.classList.toggle('on',S.letters.includes(b.textContent)));
+  const n=pool().length;
+  $('count').textContent=`${n} verbiä valittu`;
+  renderList();
+  $('vlist').querySelectorAll('input').forEach(i=>i.checked=!S.excluded.includes(i.value));
+  $('start').disabled=n===0;
+  save();
+}
+function initSetup(){
+  $('vlist').addEventListener('change',e=>{
+    const k=e.target.value;
+    S.excluded=e.target.checked?S.excluded.filter(x=>x!==k):[...S.excluded,k];
+    refresh();
+  });
+  $('selall').onclick=()=>setAll(true);$('selnone').onclick=()=>setAll(false);
+  $('share').onclick=copyLink;
+  ['mode','range','order','variant'].forEach(k=>{
+    setRadio(k,S[k]);
+    document.querySelectorAll(`input[name=${k}]`).forEach(r=>r.addEventListener('change',()=>{S[k]=r.value;refresh()}));
+  });
+  $('letters').innerHTML=LETTERS.map(l=>`<button type="button">${l}</button>`).join('');
+  $('letters').addEventListener('click',e=>{
+    if(e.target.tagName!=='BUTTON')return;
+    const l=e.target.textContent;
+    S.letters=S.letters.includes(l)?S.letters.filter(x=>x!==l):[...S.letters,l];
+    refresh();
+  });
+  const opts=LETTERS.map(l=>`<option>${l}</option>`).join('');
+  $('from').innerHTML=opts;$('to').innerHTML=opts;
+  $('from').value=LETTERS.includes(S.from)?S.from:LETTERS[0];
+  $('to').value=LETTERS.includes(S.to)?S.to:LETTERS[LETTERS.length-1];
+  $('from').onchange=e=>{S.from=e.target.value;refresh()};
+  $('to').onchange=e=>{S.to=e.target.value;refresh()};
+  $('speak').checked=S.speak;
+  $('speak').onchange=e=>{S.speak=e.target.checked;save()};
+  if(!('speechSynthesis' in window)) $('speak').parentElement.hidden=true;
+  refresh();
+}
+
+// ---------- Speech ----------
+let voices=[];
+function loadVoices(){voices=speechSynthesis.getVoices()}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function say(words){
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const lang=S.variant==='uk'?'en-GB':'en-US';
+  const voice=voices.find(v=>v.lang.replace('_','-')===lang)||voices.find(v=>v.lang.startsWith('en'));
+  words.forEach(w=>{
+    const u=new SpeechSynthesisUtterance(w);
+    u.lang=lang;if(voice)u.voice=voice;u.rate=.85;
+    speechSynthesis.speak(u);
+  });
+}
+function spoken(v){
+  const f=v[S.variant];
+  return [f[0][0],SAY.past[f[1][0]]||SAYWORD[f[1][0]]||f[1][0],SAY.pp[f[2][0]]||SAYWORD[f[2][0]]||f[2][0]];
+}
+
+// ---------- Quiz ----------
+let Q={list:[],i:0,correct:0,missed:[],answered:false};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const show=id=>['setup','quiz','result'].forEach(s=>$(s).hidden=s!==id);
+const fmt=f=>f.map(a=>a[0]).join(' – ');
+const fmtFull=f=>f.map(a=>a.join('/')).join(' – ');
+
+function startQuiz(list){
+  Q={list:S.order==='alpha'?list.slice().sort((a,b)=>a.uk[0][0].localeCompare(b.uk[0][0])):shuffle(list),i:0,correct:0,missed:[],answered:false};
+  show('quiz');next();
+}
+function distractors(v){
+  const f=v[S.variant],[inf,past,pp]=f.map(a=>a[0]);
+  const others=VERBS.filter(x=>x!==v);
+  const rnd=()=>others[Math.random()*others.length|0][S.variant];
+  const cand=[];
+  if(past!==pp) cand.push([f[0],f[2],f[1]]);
+  const reg=inf.endsWith('e')?inf+'d':inf+'ed';
+  cand.push([f[0],[reg],[reg]]);
+  const a=rnd(),b=rnd();
+  cand.push([f[0],a[1],f[2]],[f[0],f[1],b[2]],[f[0],a[1],b[2]]);
+  cand.push(rnd(),rnd(),rnd());
+  const seen=new Set([fmt(f)]),out=[];
+  for(const c of shuffle(cand.slice(0,5)).concat(cand.slice(5))){
+    const k=fmt(c);if(!seen.has(k)){seen.add(k);out.push(c)}
+    if(out.length===3)break;
+  }
+  return out;
+}
+function next(){
+  if(Q.i>=Q.list.length)return finish();
+  const v=Q.list[Q.i];Q.answered=false;
+  $('progress').textContent=`${Q.i+1} / ${Q.list.length}`;
+  $('barfill').style.width=(Q.i/Q.list.length*100)+'%';
+  $('fi').textContent=v.fi;
+  $('answer').hidden=true;$('actions').hidden=true;
+  if(S.mode==='easy'){
+    $('typed').hidden=true;$('opts').hidden=false;
+    const f=v[S.variant];
+    const options=shuffle([{f,ok:true},...distractors(v).map(f=>({f,ok:false}))]);
+    $('opts').innerHTML='';
+    options.forEach(o=>{
+      const b=document.createElement('button');b.textContent=fmt(o.f);
+      b.onclick=()=>answerEasy(b,o.ok);b.dataset.ok=o.ok;
+      $('opts').appendChild(b);
+    });
+  }else{
+    $('opts').hidden=true;$('typed').hidden=false;
+    [0,1,2].forEach(i=>{const e=$('f'+i);e.value='';e.className='fld';e.disabled=false});
+    $('check').hidden=false;$('f0').focus();
+  }
+}
+function reveal(ok,v){
+  Q.answered=true;
+  if(ok)Q.correct++;else Q.missed.push(v);
+  $('answer').className='answer'+(ok?'':' wrong');
+  $('atag').textContent=ok?'Oikein! ✓':'Oikea vastaus:';
+  $('atext').textContent=fmtFull(v[S.variant]);
+  $('answer').hidden=false;$('actions').hidden=false;
+  $('next').textContent=Q.i+1>=Q.list.length?'Tulokset':'Seuraava';
+  $('next').focus();
+  if(S.speak)say(spoken(v));
+}
+function answerEasy(btn,ok){
+  if(Q.answered)return;
+  document.querySelectorAll('#opts button').forEach(b=>{b.disabled=true;if(b.dataset.ok==='true')b.classList.add('ok')});
+  if(!ok)btn.classList.add('bad');
+  reveal(ok,Q.list[Q.i]);
+}
+$('typed').addEventListener('submit',e=>{
+  e.preventDefault();if(Q.answered)return;
+  const v=Q.list[Q.i],f=v[S.variant];let all=true;
+  [0,1,2].forEach(i=>{
+    const el=$('f'+i);el.disabled=true;
+    const parts=el.value.trim().toLowerCase().split(/\s*\/\s*/).filter(Boolean);
+    const ok=parts.length>0&&parts.every(p=>f[i].includes(p));
+    el.classList.add(ok?'ok':'bad');if(!ok)all=false;
+  });
+  $('check').hidden=true;
+  reveal(all,v);
+});
+$('next').onclick=()=>{Q.i++;next()};
+$('replay').onclick=()=>say(spoken(Q.list[Q.i]));
+$('quit').onclick=()=>{speechSynthesis&&speechSynthesis.cancel();show('setup')};
+
+function finish(){
+  $('barfill').style.width='100%';
+  const n=Q.list.length;
+  $('scoretxt').textContent=`${Q.correct} / ${n}`;
+  $('misswrap').hidden=!Q.missed.length;
+  $('again-miss').hidden=!Q.missed.length;
+  $('misslist').innerHTML=Q.missed.map(v=>`<li>${v.fi}: <b>${fmtFull(v[S.variant])}</b></li>`).join('');
+  show('result');
+}
+$('start').onclick=()=>startQuiz(pool());
+$('again').onclick=()=>startQuiz(pool());
+$('again-miss').onclick=()=>startQuiz(Q.missed);
+$('tosetup').onclick=()=>show('setup');
+
+const fromLink=applyHash();
+initSetup();
+if(fromLink&&pool().length)startQuiz(pool());
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
